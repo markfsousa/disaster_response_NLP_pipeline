@@ -11,10 +11,11 @@ from sqlalchemy import create_engine
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
 
 import nltk
 from nltk.corpus import stopwords
@@ -48,7 +49,7 @@ def load_data(database_filepath, table_name):
     engine = create_engine('sqlite:///'+database_filepath)
     df = pd.read_sql_table(table_name, engine, index_col='index')
     X = df['message']
-    y = df.drop(columns=['id', 'message'])
+    y = df.drop(columns=['id', 'message', 'genre'])
     return X, y, y.columns.values
 
 #def build_tokenizer():
@@ -143,6 +144,15 @@ def build_model():
     A Scikitlearn Pipeline to process the messages, fit, and make predictions.
     """
     
+    parameters = { # AdaBoost
+        'clf__estimator__n_estimators':[50,60,70],
+        'clf__estimator__learning_rate' : [0.98, 1.0, 1.1],
+        'clf__estimator__base_estimator': [DecisionTreeClassifier(max_depth=1),
+                                           DecisionTreeClassifier(max_depth=2),
+                                           DecisionTreeClassifier(max_depth=3)]
+    }
+    
+    
     clf = MultiOutputClassifier(AdaBoostClassifier())
 
     pipeline = Pipeline([
@@ -150,8 +160,11 @@ def build_model():
         ('tfidf', TfidfTransformer()),
         ('clf', clf)
     ])
+
+    cv = GridSearchCV(pipeline, parameters, cv=5, scoring='f1_micro', n_jobs=-1)
+
     
-    return pipeline
+    return cv
 
 
 def evaluate_model_classes(y_test, preds, category_names):

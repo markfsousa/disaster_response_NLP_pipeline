@@ -34,7 +34,7 @@ df = pd.read_sql_table('Messages_Categories', engine)
 
 # load model
 
-with gzip.open("../models/classifier_0.pkl", 'rb') as file:
+with gzip.open("../models/classifier.pkl", 'rb') as file:
     data = file.read()
     model = pickle.loads(data)
 #model = joblib.load("../models/classifier_1.pkl")
@@ -47,8 +47,19 @@ def index():
     
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('transport').count()['message']
+    genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
+    genre_percent = 100 * genre_counts / genre_counts.sum()
+    genre_percent = genre_percent.apply(lambda x : str(round(x,2))+' %')
+    
+    
+    categories = df.drop(columns=['genre','message', 'id', 'index'])
+    categories_count = categories.sum().sort_values(ascending=False)
+    categories_percent = 100 * categories_count / categories_count.sum()
+    categories_percent = categories_percent.round(2)
+    categories_percent = categories_percent.apply(lambda x : str(round(x,2))+' %')
+    categories_name = categories_count.index
+
     
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
@@ -57,7 +68,9 @@ def index():
             'data': [
                 Bar(
                     x=genre_names,
-                    y=genre_counts
+                    y=genre_counts,
+                    text=genre_percent,
+                    textposition='auto'
                 )
             ],
 
@@ -68,6 +81,27 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=categories_name,
+                    y=categories_count,
+                    text=categories_percent
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Category",
+                    'tickangle': 45,
+                    'automargin': True
                 }
             }
         }

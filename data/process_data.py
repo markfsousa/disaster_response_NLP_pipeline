@@ -126,7 +126,9 @@ def main():
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
         
         index_name = 'id' # Index column in csv file
-        drop_columns = ['genre', 'original', 'child_alone'] # Columns to be droped
+        drop_columns = ['original', 'child_alone'] # Columns to be droped
+        # Although 'genre' is used in predictions, it is used in a visualization in the web app.
+        
         cat_column = 'categories' # Categories column
         replacements=[('related', (2,1))] # Replace 2 by 1 in the column 'related'
         predictor_vars = ['message'] # Independent variables
